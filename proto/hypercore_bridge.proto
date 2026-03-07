@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package hypercore.bridge.v1;
+
+service PriceService {
+  rpc GetMidPrice(MidPriceRequest) returns (MidPriceResponse);
+  rpc StreamMids(StreamMidsRequest) returns (stream MidPriceResponse);
+  rpc GetBlockNumber(BlockNumberRequest) returns (BlockNumberResponse);
+}
+
+message MidPriceRequest {
+  string coin = 1;
+}
+
+message StreamMidsRequest {
+  string coin = 1;
+  string subscription = 2; // allMids | trades | l2Book
+  int32 heartbeat_s = 3;
+}
+
+message MidPriceResponse {
+  string coin = 1;
+  double price = 2;
+  int64 ts_ms = 3;
+  string source = 4;
+  string channel = 5;
+}
+
+message BlockNumberRequest {}
+
+message BlockNumberResponse {
+  string hex = 1;
+  uint64 number = 2;
+  int64 ts_ms = 3;
+}
