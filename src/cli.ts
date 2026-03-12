@@ -5,6 +5,7 @@ import { loadConfig } from "./config.js";
 import { GrpcClient } from "./grpc.js";
 import { runGrpcHealthSpeedTest, runRpcSpeedTest, runWsSpeedTest } from "./speed.js";
 import { renderNginxGrpcTemplate } from "./templates.js";
+import { UnifiedStreamClient, UNIFIED_LIQUIDATION_EVENT_TYPE } from "./unified_stream.js";
 import { getPriceFromWS } from "./ws.js";
 
 type CommonNetOptions = {
@@ -47,8 +48,20 @@ function grpcClientFromOptions(opts: CommonGrpcOptions): GrpcClient {
     timeoutMs: Math.round((opts.timeout ?? defaults.timeoutMs / 1000) * 1000),
     useTls: !opts.plaintext,
     serverName: opts.serverName ?? defaults.grpcServerName,
-    apiKey: opts.apiKey ?? defaults.apiKey,
+    apiKey: opts.apiKey ?? defaults.grpcApiKey ?? defaults.apiKey,
     caCertPath: opts.caCert ?? defaults.grpcCaCertPath,
+  });
+}
+
+function unifiedStreamClientFromOptions(
+  opts: CommonNetOptions & { streamUrl?: string },
+): UnifiedStreamClient {
+  return new UnifiedStreamClient({
+    ...defaults,
+    unifiedStreamUrl: opts.streamUrl ?? defaults.unifiedStreamUrl,
+    apiKey: opts.apiKey ?? defaults.unifiedStreamApiKey ?? defaults.apiKey,
+    timeoutMs: Math.round((opts.timeout ?? defaults.timeoutMs / 1000) * 1000),
+    verifyTls: opts.verifyTls ?? defaults.verifyTls,
   });
 }
 
@@ -133,6 +146,78 @@ addCommonNetOptions(
       }
       const result = await api.rpcCall(opts.method, params);
       printJson({ method: opts.method, result });
+    }),
+);
+
+const stream = program.command("stream").description("Dedicated unified stream API");
+
+addCommonNetOptions(
+  stream
+    .command("stats")
+    .description("Get unified stream aggregate statistics")
+    .option("--stream-url <url>", "Unified stream base URL", defaults.unifiedStreamUrl)
+    .action(async (opts) => {
+      const client = unifiedStreamClientFromOptions(opts);
+      printJson(await client.stats());
+    }),
+);
+
+addCommonNetOptions(
+  stream
+    .command("events")
+    .description("Get unified stream pre-decoded events")
+    .option("--stream-url <url>", "Unified stream base URL", defaults.unifiedStreamUrl)
+    .option("--limit <n>", "Maximum events", (v) => Number(v), 200)
+    .option("--event-type <type>", "Filter by event_type")
+    .option("--stream <name>", "Filter by source stream name")
+    .action(async (opts) => {
+      const client = unifiedStreamClientFromOptions(opts);
+      printJson(await client.events({ limit: opts.limit, eventType: opts.eventType, stream: opts.stream }));
+    }),
+);
+
+addCommonNetOptions(
+  stream
+    .command("liquidations")
+    .description("Get unified stream liquidation_warning events")
+    .option("--stream-url <url>", "Unified stream base URL", defaults.unifiedStreamUrl)
+    .option("--limit <n>", "Maximum events", (v) => Number(v), 200)
+    .action(async (opts) => {
+      const client = unifiedStreamClientFromOptions(opts);
+      printJson(await client.liquidations(opts.limit));
+    }),
+);
+
+addCommonNetOptions(
+  stream
+    .command("consensus-pulse")
+    .description("Get unified consensus pulse snapshot")
+    .option("--stream-url <url>", "Unified stream base URL", defaults.unifiedStreamUrl)
+    .action(async (opts) => {
+      const client = unifiedStreamClientFromOptions(opts);
+      printJson(await client.consensusPulse());
+    }),
+);
+
+addCommonNetOptions(
+  stream
+    .command("sse")
+    .description("Read a bounded number of SSE events")
+    .option("--stream-url <url>", "Unified stream base URL", defaults.unifiedStreamUrl)
+    .option("--max-events <n>", "Maximum events", (v) => Number(v), 20)
+    .option("--event-type <type>", "Filter by event_type")
+    .option("--stream <name>", "Filter by source stream name")
+    .action(async (opts) => {
+      const client = unifiedStreamClientFromOptions(opts);
+      const events: Array<Record<string, unknown>> = [];
+      for await (const event of client.sseEvents({
+        maxEvents: opts.maxEvents,
+        eventType: opts.eventType,
+        stream: opts.stream,
+      })) {
+        events.push(event);
+      }
+      printJson({ events });
     }),
 );
 
@@ -224,6 +309,27 @@ addCommonGrpcOptions(
         maxMessages: opts.maxMessages,
       });
       printJson({ messages });
+    }),
+  30,
+);
+
+addCommonGrpcOptions(
+  grpcCmd
+    .command("liquidations")
+    .description("Stream liquidation events via bridge gRPC")
+    .option("--coin <symbol>", "Coin symbol", "BTC")
+    .option("--heartbeat-s <seconds>", "Heartbeat seconds", (v) => Number(v), 1)
+    .option("--max-messages <n>", "Max messages", (v) => Number(v), 20)
+    .action(async (opts) => {
+      const client = grpcClientFromOptions(opts);
+      printJson({
+        event_type: UNIFIED_LIQUIDATION_EVENT_TYPE,
+        messages: await client.streamLiquidations({
+          coin: opts.coin,
+          heartbeatS: opts.heartbeatS,
+          maxMessages: opts.maxMessages,
+        }),
+      });
     }),
   30,
 );

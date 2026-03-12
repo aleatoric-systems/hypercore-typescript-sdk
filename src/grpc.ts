@@ -5,6 +5,12 @@ import { fileURLToPath } from "node:url";
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
 import { summarizeLatencies } from "./stats.js";
+import {
+  GrpcBlockNumber,
+  GrpcMidPrice,
+  LiquidationFeedEvent,
+  StreamMidsSubscription as ServiceStreamMidsSubscription,
+} from "./service_types.js";
 
 export type GrpcConnectionConfig = {
   target: string;
@@ -34,6 +40,10 @@ const PRICE_SERVICE_CTOR = BRIDGE_PKG.hypercore.bridge.v1.PriceService;
 const HEALTH_DEF = protoLoader.loadSync(path.join(PROTO_DIR, "health.proto"), LOADER_OPTS);
 const HEALTH_PKG = grpc.loadPackageDefinition(HEALTH_DEF) as any;
 const HEALTH_SERVICE_CTOR = HEALTH_PKG.grpc.health.v1.Health;
+
+export type MidStreamMessage = GrpcMidPrice;
+export type LiquidationStreamMessage = LiquidationFeedEvent;
+export type StreamMidsSubscription = ServiceStreamMidsSubscription;
 
 function buildMetadata(apiKey?: string): grpc.Metadata {
   const md = new grpc.Metadata();
@@ -124,27 +134,31 @@ export class GrpcClient {
       .filter((x) => x.length > 0);
   }
 
-  async getMidPrice(coin = "BTC"): Promise<{
-    coin: string;
-    price: number;
-    ts_ms: string;
-    source: string;
-    channel: string;
-    latency_ms: number;
-  }> {
+  async getMidPrice(coin = "BTC"): Promise<GrpcMidPrice> {
     const started = performance.now();
     const response = await this.unary<{ coin: string }, any>(this.priceClient, "GetMidPrice", { coin });
-    return {
-      coin: response.coin,
-      price: Number(response.price),
-      ts_ms: String(response.tsMs ?? response.ts_ms),
-      source: response.source,
-      channel: response.channel,
-      latency_ms: Number((performance.now() - started).toFixed(3)),
-    };
+      return {
+        coin: response.coin,
+        price: Number(response.price),
+        ts_ms: String(response.tsMs ?? response.ts_ms),
+        source: response.source,
+        channel: response.channel,
+        upstream_ts_ms: String(response.upstreamTsMs ?? response.upstream_ts_ms ?? ""),
+        ingest_ts_us: String(response.ingestTsUs ?? response.ingest_ts_us ?? ""),
+        publish_ts_us: String(response.publishTsUs ?? response.publish_ts_us ?? ""),
+        seq: String(response.seq ?? ""),
+        cached: Boolean(response.cached),
+        best_bid: Number(response.bestBid ?? response.best_bid ?? 0),
+        best_ask: Number(response.bestAsk ?? response.best_ask ?? 0),
+        size: Number(response.size ?? 0),
+        side: String(response.side ?? ""),
+        trade_id: String(response.tradeId ?? response.trade_id ?? ""),
+        stream_source: String(response.streamSource ?? response.stream_source ?? ""),
+        latency_ms: Number((performance.now() - started).toFixed(3)),
+      };
   }
 
-  async getBlockNumber(): Promise<{ hex: string; number: string; ts_ms: string; latency_ms: number }> {
+  async getBlockNumber(): Promise<GrpcBlockNumber> {
     const started = performance.now();
     const response = await this.unary<Record<string, never>, any>(this.priceClient, "GetBlockNumber", {});
     return {
@@ -157,10 +171,10 @@ export class GrpcClient {
 
   async streamMids(options: {
     coin?: string;
-    subscription?: "allMids" | "trades" | "l2Book";
+    subscription?: StreamMidsSubscription;
     heartbeatS?: number;
     maxMessages?: number;
-  } = {}): Promise<Array<{ coin: string; price: number; ts_ms: string; source: string; channel: string }>> {
+  } = {}): Promise<MidStreamMessage[]> {
     const {
       coin = "BTC",
       subscription = "allMids",
@@ -171,7 +185,7 @@ export class GrpcClient {
     const req = { coin, subscription, heartbeatS };
 
     return new Promise((resolve, reject) => {
-      const out: Array<{ coin: string; price: number; ts_ms: string; source: string; channel: string }> = [];
+      const out: MidStreamMessage[] = [];
       const stream = this.priceClient.StreamMids(req, this.md, {
         deadline: Date.now() + Math.max(this.timeoutMs, heartbeatS * maxMessages * 1000 + 2_000),
       });
@@ -183,6 +197,69 @@ export class GrpcClient {
           ts_ms: String(item.tsMs ?? item.ts_ms),
           source: item.source,
           channel: item.channel,
+          upstream_ts_ms: String(item.upstreamTsMs ?? item.upstream_ts_ms ?? ""),
+          ingest_ts_us: String(item.ingestTsUs ?? item.ingest_ts_us ?? ""),
+          publish_ts_us: String(item.publishTsUs ?? item.publish_ts_us ?? ""),
+          seq: String(item.seq ?? ""),
+          cached: Boolean(item.cached),
+          best_bid: Number(item.bestBid ?? item.best_bid ?? 0),
+          best_ask: Number(item.bestAsk ?? item.best_ask ?? 0),
+          size: Number(item.size ?? 0),
+          side: String(item.side ?? ""),
+          trade_id: String(item.tradeId ?? item.trade_id ?? ""),
+          stream_source: String(item.streamSource ?? item.stream_source ?? ""),
+        });
+        if (out.length >= maxMessages) {
+          stream.cancel();
+          resolve(out);
+        }
+      });
+
+      stream.on("end", () => {
+        resolve(out);
+      });
+
+      stream.on("error", (err: Error) => {
+        if (out.length > 0) {
+          resolve(out);
+          return;
+        }
+        reject(err);
+      });
+    });
+  }
+
+  async streamLiquidations(options: {
+    coin?: string;
+    heartbeatS?: number;
+    maxMessages?: number;
+  } = {}): Promise<LiquidationStreamMessage[]> {
+    const {
+      coin = "BTC",
+      heartbeatS = 1,
+      maxMessages = 20,
+    } = options;
+
+    const req = { coin, heartbeatS };
+
+    return new Promise((resolve, reject) => {
+      const out: LiquidationStreamMessage[] = [];
+      const stream = this.priceClient.StreamLiquidations(req, this.md, {
+        deadline: Date.now() + Math.max(this.timeoutMs, heartbeatS * maxMessages * 1000 + 2_000),
+      });
+
+      stream.on("data", (item: any) => {
+        out.push({
+          symbol: item.symbol,
+          tx_hash: String(item.txHash ?? item.tx_hash),
+          block_number: String(item.blockNumber ?? item.block_number),
+          log_index: Number(item.logIndex ?? item.log_index ?? 0),
+          ts_ms: String(item.tsMs ?? item.ts_ms),
+          source: item.source,
+          channel: item.channel,
+          address: item.address,
+          topic0: item.topic0,
+          data: item.data,
         });
         if (out.length >= maxMessages) {
           stream.cancel();

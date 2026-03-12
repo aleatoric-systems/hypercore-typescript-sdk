@@ -6,11 +6,14 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "hypercore-ts-sdk": "dist/cli.js"
+    "hypercore-ts-sdk": "dist/cli.js",
+    "hypercore-ts-mcp": "dist/mcp_cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsx src/cli.ts"
+    "dev": "tsx src/cli.ts",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "validate:mcp:inspector": "bash ./scripts/validate_mcp_inspector.sh"
   },
   "engines": {
     "node": ">=20"

@@ -6,6 +6,7 @@ service PriceService {
   rpc GetMidPrice(MidPriceRequest) returns (MidPriceResponse);
   rpc StreamMids(StreamMidsRequest) returns (stream MidPriceResponse);
   rpc GetBlockNumber(BlockNumberRequest) returns (BlockNumberResponse);
+  rpc StreamLiquidations(StreamLiquidationsRequest) returns (stream LiquidationEvent);
 }
 
 message MidPriceRequest {
@@ -32,4 +33,22 @@ message BlockNumberResponse {
   string hex = 1;
   uint64 number = 2;
   int64 ts_ms = 3;
+}
+
+message StreamLiquidationsRequest {
+  string coin = 1;
+  int32 heartbeat_s = 2;
+}
+
+message LiquidationEvent {
+  string symbol = 1;
+  string tx_hash = 2;
+  uint64 block_number = 3;
+  uint32 log_index = 4;
+  int64 ts_ms = 5;
+  string source = 6;
+  string channel = 7;
+  string address = 8;
+  string topic0 = 9;
+  string data = 10;
 }
