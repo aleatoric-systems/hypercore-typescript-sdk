@@ -9,6 +9,7 @@ All notable changes to this project are documented in this file.
 - Public package metadata for npm distribution, including exports, package contents, license, repository, and support fields.
 - Customer-facing documentation, contribution guide, and runnable connection examples.
 - A published TypeScript API interface reference.
+- Branded GitHub-facing README assets, discoverability keywords, and production documentation.
 - GitHub Actions workflows for CI and tagged releases.
 - Release validation script using `npm pack --dry-run`.
 - Typed helpers for unified liquidations, liquidation cascades, status APIs, and browser-safe market data surfaces.

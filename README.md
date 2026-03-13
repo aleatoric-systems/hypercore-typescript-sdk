@@ -1,6 +1,36 @@
-# Aleatoric Hypercore TypeScript SDK
+<p align="center">
+  <img src="./assets/aleatoric-systems-logo.svg" alt="Aleatoric Systems" width="220">
+</p>
 
-The Aleatoric Hypercore TypeScript SDK provides read-only access to Hyperliquid market data and infrastructure exposed through Aleatoric Systems. It is designed for customer-facing integrations that need a typed Node.js client, CLI tooling, and an MCP server for operator workflows.
+# Aleatoric Systems
+
+## Aleatoric MCP Client
+
+![MCP Version](https://img.shields.io/badge/MCP-2024--11--05-0a7f5a)
+![License](https://img.shields.io/badge/license-Apache%202.0-1f6feb)
+![GitHub last commit](https://img.shields.io/github/last-commit/aleatoric-systems/hypercore-typescript-sdk)
+![MCP Badge](https://img.shields.io/badge/JSON--RPC-2.0-444444)
+![Smithery Badge](https://img.shields.io/badge/Smithery-ready-f97316)
+![Status](https://img.shields.io/badge/status-production-0a7f5a)
+![Compliance](https://img.shields.io/badge/compliance-Aleatoric%20Engine%20API%20v0.4.7-0a7f5a)
+
+Official MCP client SDK for Aleatoric Systems: institutional-grade synthetic market data generation, unified stream access, and operator-ready service tooling.
+
+Verified Compliance: This client is aligned with Aleatoric Engine API `v0.4.7` and MCP Protocol Version `2024-11-05` over JSON-RPC 2.0. The documented examples are validated against the current production endpoint contract.
+
+Keywords: `mcp`, `market-data`, `synthetic-data`, `backtesting`, `trading`, `fintech`, `quantitative-finance`, `perpetuals`, `futures`, `order-book`
+
+## Overview
+
+The Aleatoric Hypercore TypeScript SDK is the public Node.js and MCP integration surface for Aleatoric Systems. It is designed for customer-facing integrations that need:
+
+- typed JSON-RPC access
+- low-latency unified stream access
+- browser-safe all-mids, L2 book, and asset-context snapshots
+- gRPC diagnostics and bridge consumers
+- status monitoring and MCP tooling
+
+This SDK is intentionally read-only. It does not include signing, custody, or order placement.
 
 ## Features
 
@@ -11,8 +41,6 @@ The Aleatoric Hypercore TypeScript SDK provides read-only access to Hyperliquid 
 - Status API client
 - Stdio MCP server built on the same SDK primitives
 - CLI utilities for connection checks and latency benchmarking
-
-This SDK is intentionally read-only. It does not include signing, custody, or order-placement flows.
 
 ## Requirements
 
@@ -110,6 +138,10 @@ The MCP server exposes:
 - `status_get_private`
 - `rpc_call`
 
+## Production
+
+Production deployment, environment, compliance, and support guidance is documented in [PRODUCTION.md](PRODUCTION.md).
+
 ## Examples
 
 - [examples/README.md](examples/README.md)
@@ -148,4 +180,5 @@ npm run release:check
 - [CHANGELOG.md](CHANGELOG.md)
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [API_INTERFACE.md](API_INTERFACE.md)
+- [PRODUCTION.md](PRODUCTION.md)
 - [LICENSE](LICENSE)

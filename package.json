@@ -16,10 +16,12 @@
     "hypercore-ts-mcp": "dist/mcp_cli.js"
   },
   "files": [
+    "assets/",
     "dist/",
     "proto/",
     "README.md",
     "API_INTERFACE.md",
+    "PRODUCTION.md",
     "CHANGELOG.md",
     "LICENSE",
     "CONTRIBUTING.md"
@@ -48,6 +50,7 @@
     "email": "github@aleatoric.systems"
   },
   "keywords": [
+    "aleatoric-systems",
     "aleatoric",
     "hypercore",
     "hyperliquid",
@@ -55,7 +58,16 @@
     "typescript",
     "grpc",
     "websocket",
-    "mcp"
+    "mcp",
+    "market-data",
+    "synthetic-data",
+    "backtesting",
+    "trading",
+    "fintech",
+    "quantitative-finance",
+    "perpetuals",
+    "futures",
+    "order-book"
   ],
   "dependencies": {
     "@grpc/grpc-js": "^1.11.3",
