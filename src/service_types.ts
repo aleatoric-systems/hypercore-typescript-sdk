@@ -137,6 +137,52 @@ export type UnifiedEventsQuery = {
   stream?: string;
 };
 
+export type UnifiedAllMidsSnapshot = {
+  captured_at: string;
+  dex: string;
+  snapshot: Record<string, string>;
+  count: number;
+  age_ms?: number;
+};
+
+export type UnifiedBookLevel = {
+  px: string;
+  sz: string;
+  n: number;
+};
+
+export type UnifiedL2BookSnapshot = {
+  coin: string;
+  dex: string;
+  time: number;
+  levels: {
+    bids: UnifiedBookLevel[];
+    asks: UnifiedBookLevel[];
+  };
+};
+
+export type UnifiedAssetContext = {
+  coin: string;
+  markPx: string;
+  midPx: string;
+  oraclePx: string;
+  funding: string;
+  openInterest: string;
+  dayNtlVlm: string;
+  prevDayPx: string;
+  premium: string;
+  impactPxs: string[];
+};
+
+export type UnifiedAssetContextsSnapshot = {
+  captured_at: string;
+  dex: string;
+  assets: UnifiedAssetContext[];
+  assets_by_coin: Record<string, UnifiedAssetContext>;
+  count: number;
+  age_ms?: number;
+};
+
 export type UnifiedEventsResponse<TEvent = UnifiedEventEnvelope> = {
   events: TEvent[];
   count: number;

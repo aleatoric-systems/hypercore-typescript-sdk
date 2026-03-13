@@ -5,7 +5,7 @@
 TypeScript mirror of the Python SDK for:
 - JSON-RPC access
 - WebSocket price access
-- dedicated unified stream access (stats, filtered events, liquidation feed, SSE, consensus pulse)
+- dedicated unified stream access (stats, filtered events, liquidation feed, browser-safe allMids/L2/asset-context snapshots, SSE, consensus pulse)
 - typed status API access
 - gRPC health/price/stream/liquidations/block access
 - stdio MCP server built on top of the SDK clients
@@ -56,6 +56,16 @@ node dist/cli.js grpc liquidations --target hl.grpc.aleatoric.systems:443 --api-
 node dist/cli.js speed grpc-health --target hl.grpc.aleatoric.systems:443 --count 20
 hypercore-ts-mcp
 ```
+
+## Unified Browser-Safe Market Data
+
+The unified client now exposes the browser-safe surfaces added to the hypernode:
+
+- `allMids()` and `allMidsStream()`
+- `getL2Book()` and `streamL2Book()`
+- `getAssetContexts()` and `streamAssetContexts()`
+
+These endpoints are intended for browser or edge runtimes that cannot use `@grpc/grpc-js` directly but still need low-latency canonical market data.
 
 ## TypeScript MCP
 

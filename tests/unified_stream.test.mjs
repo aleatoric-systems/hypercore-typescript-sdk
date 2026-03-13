@@ -95,6 +95,63 @@ test("unified stream client uses dedicated key and parses typed responses", asyn
       }));
       return;
     }
+    if (req.url === "/api/v1/unified/all-mids") {
+      res.end(JSON.stringify({
+        captured_at: "2026-03-12T00:00:00Z",
+        dex: "",
+        snapshot: { BTC: "60000", ETH: "3000" },
+        count: 2,
+        age_ms: 5,
+      }));
+      return;
+    }
+    if (req.url?.startsWith("/api/v1/unified/l2-book")) {
+      res.end(JSON.stringify({
+        coin: "BTC",
+        dex: "",
+        time: 1234,
+        levels: {
+          bids: [{ px: "60000", sz: "1.0", n: 2 }],
+          asks: [{ px: "60001", sz: "1.5", n: 1 }],
+        },
+      }));
+      return;
+    }
+    if (req.url?.startsWith("/api/v1/unified/asset-contexts")) {
+      res.end(JSON.stringify({
+        captured_at: "2026-03-12T00:00:00Z",
+        dex: "",
+        assets: [{
+          coin: "BTC",
+          markPx: "60000",
+          midPx: "59999",
+          oraclePx: "59990",
+          funding: "0.0001",
+          openInterest: "100",
+          dayNtlVlm: "1000000",
+          prevDayPx: "59000",
+          premium: "0.0002",
+          impactPxs: ["59995", "60005"],
+        }],
+        assets_by_coin: {
+          BTC: {
+            coin: "BTC",
+            markPx: "60000",
+            midPx: "59999",
+            oraclePx: "59990",
+            funding: "0.0001",
+            openInterest: "100",
+            dayNtlVlm: "1000000",
+            prevDayPx: "59000",
+            premium: "0.0002",
+            impactPxs: ["59995", "60005"],
+          }
+        },
+        count: 1,
+        age_ms: 7,
+      }));
+      return;
+    }
     res.statusCode = 404;
     res.end(JSON.stringify({ error: "not_found" }));
   });
@@ -116,12 +173,74 @@ test("unified stream client uses dedicated key and parses typed responses", asyn
     const stats = await client.stats();
     const events = await client.events({ limit: 1, stream: "trades" });
     const pulse = await client.consensusPulse();
+    const allMids = await client.allMids();
+    const l2Book = await client.getL2Book("BTC", { depth: 1 });
+    const assetContexts = await client.getAssetContexts({ coin: "BTC" });
 
     assert.equal(stats.stats.latest_seq, 1);
     assert.equal(events.count, 1);
     assert.equal(events.events[0].event_type, "trade");
     assert.equal(pulse.consensus_pulse.current_block_height, 123);
+    assert.equal(allMids.snapshot.BTC, "60000");
+    assert.equal(l2Book.levels.bids[0].px, "60000");
+    assert.equal(assetContexts.assets_by_coin.BTC.funding, "0.0001");
     assert.ok(seen.every((item) => item.key === "unified-key"));
+  } finally {
+    await server.close();
+  }
+});
+
+test("unified stream client parses browser-safe SSE feeds", async () => {
+  const server = await withServer((req, res) => {
+    if (req.url?.startsWith("/api/v1/unified/all-mids/stream")) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      res.end("data: {\"captured_at\":\"2026-03-12T00:00:00Z\",\"dex\":\"\",\"snapshot\":{\"BTC\":\"60000\"},\"count\":1}\n\n");
+      return;
+    }
+    if (req.url?.startsWith("/api/v1/unified/l2-book/stream")) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      res.end("data: {\"coin\":\"BTC\",\"dex\":\"\",\"time\":1234,\"levels\":{\"bids\":[{\"px\":\"60000\",\"sz\":\"1.0\",\"n\":1}],\"asks\":[]}}\n\n");
+      return;
+    }
+    if (req.url?.startsWith("/api/v1/unified/asset-contexts/stream")) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      res.end("data: {\"captured_at\":\"2026-03-12T00:00:00Z\",\"dex\":\"\",\"assets\":[{\"coin\":\"BTC\",\"markPx\":\"60000\",\"midPx\":\"59999\",\"oraclePx\":\"59990\",\"funding\":\"0.0001\",\"openInterest\":\"100\",\"dayNtlVlm\":\"1000000\",\"prevDayPx\":\"59000\",\"premium\":\"0.0002\",\"impactPxs\":[]}],\"assets_by_coin\":{\"BTC\":{\"coin\":\"BTC\",\"markPx\":\"60000\",\"midPx\":\"59999\",\"oraclePx\":\"59990\",\"funding\":\"0.0001\",\"openInterest\":\"100\",\"dayNtlVlm\":\"1000000\",\"prevDayPx\":\"59000\",\"premium\":\"0.0002\",\"impactPxs\":[]}},\"count\":1}\n\n");
+      return;
+    }
+    res.statusCode = 404;
+    res.end();
+  });
+
+  try {
+    const client = new UnifiedStreamClient({
+      rpcUrl: "http://unused",
+      wsUrl: "ws://unused",
+      infoUrl: "http://unused",
+      unifiedStreamUrl: server.url,
+      statusUrl: "http://unused",
+      grpcTarget: "unused:443",
+      timeoutMs: 2000,
+      verifyTls: true,
+      grpcTls: true,
+      unifiedStreamApiKey: "unified-key",
+    });
+
+    const allMidsEvents = [];
+    for await (const item of client.allMidsStream({ maxEvents: 1 })) {
+      allMidsEvents.push(item);
+    }
+    const l2Events = [];
+    for await (const item of client.streamL2Book("BTC", { maxEvents: 1 })) {
+      l2Events.push(item);
+    }
+    const assetEvents = [];
+    for await (const item of client.streamAssetContexts({ coin: "BTC", maxEvents: 1 })) {
+      assetEvents.push(item);
+    }
+
+    assert.equal(allMidsEvents[0].snapshot.BTC, "60000");
+    assert.equal(l2Events[0].levels.bids[0].n, 1);
+    assert.equal(assetEvents[0].assets[0].coin, "BTC");
   } finally {
     await server.close();
   }
