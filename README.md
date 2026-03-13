@@ -48,6 +48,7 @@ node dist/cli.js price ws --coin BTC --subscription allMids
 node dist/cli.js stream stats --stream-url https://unified.grpc.aleatoric.systems --api-key "<UNIFIED_STREAM_KEY>"
 node dist/cli.js stream events --limit 100 --event-type liquidation_warning --api-key "<UNIFIED_STREAM_KEY>"
 node dist/cli.js stream liquidations --limit 50 --api-key "<UNIFIED_STREAM_KEY>"
+node dist/cli.js stream cascades --limit 20 --api-key "<UNIFIED_STREAM_KEY>"
 node dist/cli.js stream sse --max-events 10 --event-type liquidation_warning --api-key "<UNIFIED_STREAM_KEY>"
 node dist/cli.js stream consensus-pulse --api-key "<UNIFIED_STREAM_KEY>"
 node dist/cli.js grpc health --target hl.grpc.aleatoric.systems:443
@@ -60,6 +61,8 @@ hypercore-ts-mcp
 ## Unified Browser-Safe Market Data
 
 The unified client now exposes the browser-safe surfaces added to the hypernode:
+
+TypeScript API integration now exposes `client.liquidationCascades()` for derived `liquidation_cascade` events and keeps `client.liquidations()` for raw `liquidation_warning` events.
 
 - `allMids()` and `allMidsStream()`
 - `getL2Book()` and `streamL2Book()`
@@ -126,6 +129,7 @@ The MCP server exposes these tools:
 - `grpc_stream_liquidations_sample`
 - `unified_get_stats`
 - `unified_get_events`
+- `unified_get_liquidation_cascades`
 - `unified_get_consensus_pulse`
 - `status_get_public`
 - `status_get_private`

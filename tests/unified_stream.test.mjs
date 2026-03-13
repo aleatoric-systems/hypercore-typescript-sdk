@@ -52,6 +52,7 @@ test("unified stream client uses dedicated key and parses typed responses", asyn
             l2: { snapshots_total: 0 },
             l4: { events_total: 0, upserts_total: 0, deletes_total: 0, cancellations_proxy_total: 0 },
             trades: { events_total: 0, volume_base_total: 0, notional_usd_total: 0, last_price: null, last_side: "" },
+            liquidations: { events_total: 0, cascades_total: 0, buy_events_total: 0, sell_events_total: 0, volume_base_total: 0, notional_usd_total: 0, window_event_count: 0, window_notional_usd: 0, window_buy_notional_usd: 0, window_sell_notional_usd: 0, last_price: null, last_side: "", last_cascade_at: null },
             blocks: { events_total: 0, last_block: null, last_size_bytes: 0, last_tx_count: 0, sample_count: 0, avg_size_bytes: 0, p95_size_bytes: 0, max_size_bytes: 0, avg_tx_count: 0, p95_tx_count: 0, max_tx_count: 0 }
           },
           disk_sync: { messages_total: 0, last_seq: 0, last_message_at: null },
@@ -172,6 +173,8 @@ test("unified stream client uses dedicated key and parses typed responses", asyn
 
     const stats = await client.stats();
     const events = await client.events({ limit: 1, stream: "trades" });
+    const liquidations = await client.liquidations(2);
+    const cascades = await client.liquidationCascades(3);
     const pulse = await client.consensusPulse();
     const allMids = await client.allMids();
     const l2Book = await client.getL2Book("BTC", { depth: 1 });
@@ -180,6 +183,8 @@ test("unified stream client uses dedicated key and parses typed responses", asyn
     assert.equal(stats.stats.latest_seq, 1);
     assert.equal(events.count, 1);
     assert.equal(events.events[0].event_type, "trade");
+    assert.equal(liquidations.events[0].event_type, "trade");
+    assert.equal(cascades.events[0].event_type, "trade");
     assert.equal(pulse.consensus_pulse.current_block_height, 123);
     assert.equal(allMids.snapshot.BTC, "60000");
     assert.equal(l2Book.levels.bids[0].px, "60000");

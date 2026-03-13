@@ -81,6 +81,23 @@ export type UnifiedDecodedTransfer = {
   value?: number;
 };
 
+export type UnifiedDecodedRawAction = {
+  version?: number;
+  action_id?: number;
+  user?: string;
+  action?: string;
+  asset?: number;
+  is_buy?: boolean;
+  side?: string;
+  price?: number;
+  size?: number;
+  reduce_only?: boolean;
+  tif?: number;
+  cloid?: string;
+};
+
+export type UnifiedDecodedEvmLog = UnifiedDecodedTransfer & UnifiedDecodedRawAction;
+
 export type UnifiedEvmLogPayload = {
   address: string;
   topics: string[];
@@ -89,7 +106,7 @@ export type UnifiedEvmLogPayload = {
   block_number: number;
   log_index: number;
   removed: boolean;
-  decoded?: UnifiedDecodedTransfer;
+  decoded?: UnifiedDecodedEvmLog;
 };
 
 export type UnifiedEventEnvelope<TPayload = Record<string, unknown>> = {
@@ -129,6 +146,42 @@ export type UnifiedLiquidationWarningEvent = UnifiedEventEnvelope<UnifiedEvmLogP
   category: "evm_log";
   stream: "eth_getLogs";
   event_type: "liquidation_warning";
+};
+
+export type UnifiedLiquidationCascadeSample = {
+  block_number: number;
+  tx_hash: string;
+  log_index: number;
+  side: string;
+  size: number;
+  price: number;
+  notional_usd: number;
+};
+
+export type UnifiedLiquidationCascadePayload = {
+  window_seconds: number;
+  window_event_count: number;
+  window_total_notional_usd: number;
+  window_buy_notional_usd: number;
+  window_sell_notional_usd: number;
+  dominant_side: string;
+  threshold_event_count: number;
+  threshold_notional_usd: number;
+  first_block_number: number;
+  last_block_number: number;
+  last_tx_hash: string;
+  last_log_index: number;
+  last_price: number;
+  last_size: number;
+  unique_users: string[];
+  asset_ids: number[];
+  sample: UnifiedLiquidationCascadeSample[];
+};
+
+export type UnifiedLiquidationCascadeEvent = UnifiedEventEnvelope<UnifiedLiquidationCascadePayload> & {
+  category: "signal";
+  stream: "liquidation_cascade";
+  event_type: "liquidation_cascade";
 };
 
 export type UnifiedEventsQuery = {
@@ -239,6 +292,21 @@ export type UnifiedMicrostructureStats = {
     notional_usd_total: number;
     last_price: number | null;
     last_side: string;
+  };
+  liquidations: {
+    events_total: number;
+    cascades_total: number;
+    buy_events_total: number;
+    sell_events_total: number;
+    volume_base_total: number;
+    notional_usd_total: number;
+    window_event_count: number;
+    window_notional_usd: number;
+    window_buy_notional_usd: number;
+    window_sell_notional_usd: number;
+    last_price: number | null;
+    last_side: string;
+    last_cascade_at: string | null;
   };
   blocks: {
     events_total: number;

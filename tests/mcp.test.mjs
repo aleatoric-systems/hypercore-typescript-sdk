@@ -22,6 +22,7 @@ test("mcp initialize, tool listing, and catalog work", async () => {
   assert.ok(Array.isArray(tools.result.tools));
   assert.ok(tools.result.tools.some((tool) => tool.name === "catalog_interfaces"));
   assert.ok(tools.result.tools.some((tool) => tool.name === "grpc_stream_liquidations_sample"));
+  assert.ok(tools.result.tools.some((tool) => tool.name === "unified_get_liquidation_cascades"));
 
   const catalog = await server.handleRequest({
     jsonrpc: "2.0",
@@ -31,6 +32,7 @@ test("mcp initialize, tool listing, and catalog work", async () => {
   });
   assert.match(catalog.result.content[0].text, /service_catalog/);
   assert.match(catalog.result.content[0].text, /recommended_paths/);
+  assert.match(catalog.result.content[0].text, /liquidation_cascade/);
 });
 
 test("mcp returns error for unknown tool", async () => {

@@ -7,11 +7,13 @@ import {
   UnifiedEventsQuery,
   UnifiedEventsResponse,
   UnifiedL2BookSnapshot,
+  UnifiedLiquidationCascadeEvent,
   UnifiedLiquidationWarningEvent,
   UnifiedStatsResponse,
 } from "./service_types.js";
 
 export const UNIFIED_LIQUIDATION_EVENT_TYPE = "liquidation_warning";
+export const UNIFIED_LIQUIDATION_CASCADE_EVENT_TYPE = "liquidation_cascade";
 export type UnifiedEvent = UnifiedEventEnvelope;
 export type UnifiedPayload = Record<string, unknown>;
 export type { UnifiedEventsQuery };
@@ -92,6 +94,10 @@ export class UnifiedStreamClient {
 
   async liquidations(limit = 200): Promise<UnifiedEventsResponse<UnifiedLiquidationWarningEvent>> {
     return (await this.events({ limit, eventType: UNIFIED_LIQUIDATION_EVENT_TYPE })) as UnifiedEventsResponse<UnifiedLiquidationWarningEvent>;
+  }
+
+  async liquidationCascades(limit = 200): Promise<UnifiedEventsResponse<UnifiedLiquidationCascadeEvent>> {
+    return (await this.events({ limit, eventType: UNIFIED_LIQUIDATION_CASCADE_EVENT_TYPE })) as UnifiedEventsResponse<UnifiedLiquidationCascadeEvent>;
   }
 
   async consensusPulse(): Promise<UnifiedConsensusPulseResponse> {

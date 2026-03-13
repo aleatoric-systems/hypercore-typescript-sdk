@@ -147,6 +147,17 @@ export class HypernodeMCPServer {
         },
       },
       {
+        name: "unified_get_liquidation_cascades",
+        description: "Fetch recent derived liquidation cascade events from the unified sidecar.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            limit: { type: "integer", minimum: 1, maximum: 2000, default: 50 },
+          },
+          additionalProperties: false,
+        },
+      },
+      {
         name: "unified_get_consensus_pulse",
         description: "Fetch consensus pulse metrics, including block-height and Tokyo probe status.",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
@@ -211,6 +222,7 @@ export class HypernodeMCPServer {
             "l2Book top-of-book fields",
             "derived l4_delta",
             "filtered liquidation_warning",
+            "derived liquidation_cascade",
             "block_metrics",
             "consensus_pulse",
             "replica_cmd",
@@ -220,7 +232,7 @@ export class HypernodeMCPServer {
             trades: "grpc_stream_mids_sample(subscription=trades) or unified_get_events(stream=trades)",
             l2_book: "grpc_stream_mids_sample(subscription=l2Book) for best bid/ask; upstream l2Book for full ladder",
             l4_orderflow: "unified_get_stats and unified_get_events(stream=l4_delta)",
-            liquidations: "grpc_stream_liquidations_sample first, unified_get_events(eventType=liquidation_warning) second",
+            liquidations: "grpc_stream_liquidations_sample first, unified_get_events(eventType=liquidation_warning) second, unified_get_liquidation_cascades for derived clusters",
             block_metrics: "unified_get_stats or unified_get_events(eventType=block_metrics)",
           },
         };
@@ -253,6 +265,8 @@ export class HypernodeMCPServer {
           eventType: typeof argumentsPayload.eventType === "string" ? argumentsPayload.eventType : undefined,
           stream: typeof argumentsPayload.stream === "string" ? argumentsPayload.stream : undefined,
         });
+      case "unified_get_liquidation_cascades":
+        return this.clients.unified.liquidationCascades(Number(argumentsPayload.limit ?? 50));
       case "unified_get_consensus_pulse":
         return this.clients.unified.consensusPulse();
       case "status_get_public":

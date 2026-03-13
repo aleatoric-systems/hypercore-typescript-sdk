@@ -14,6 +14,7 @@ export { renderNginxGrpcTemplate } from "./templates.js";
 export { StatusClient } from "./status.js";
 export {
   UnifiedStreamClient,
+  UNIFIED_LIQUIDATION_CASCADE_EVENT_TYPE,
   UNIFIED_LIQUIDATION_EVENT_TYPE,
   type UnifiedEvent,
   type UnifiedEventsQuery,
@@ -34,6 +35,8 @@ export type {
   UnifiedBookLevel,
   UnifiedConsensusPulse,
   UnifiedConsensusPulseResponse,
+  UnifiedDecodedEvmLog,
+  UnifiedDecodedRawAction,
   UnifiedDecodedTransfer,
   UnifiedEventEnvelope,
   UnifiedEventsResponse,
@@ -44,6 +47,9 @@ export type {
   UnifiedL2BookSnapshot,
   UnifiedL4DeltaPayload,
   UnifiedLatencySummary,
+  UnifiedLiquidationCascadeEvent,
+  UnifiedLiquidationCascadePayload,
+  UnifiedLiquidationCascadeSample,
   UnifiedLiquidationWarningEvent,
   UnifiedMicrostructureStats,
   UnifiedStats,

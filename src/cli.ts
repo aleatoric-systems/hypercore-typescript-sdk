@@ -5,7 +5,7 @@ import { loadConfig } from "./config.js";
 import { GrpcClient } from "./grpc.js";
 import { runGrpcHealthSpeedTest, runRpcSpeedTest, runWsSpeedTest } from "./speed.js";
 import { renderNginxGrpcTemplate } from "./templates.js";
-import { UnifiedStreamClient, UNIFIED_LIQUIDATION_EVENT_TYPE } from "./unified_stream.js";
+import { UnifiedStreamClient, UNIFIED_LIQUIDATION_CASCADE_EVENT_TYPE, UNIFIED_LIQUIDATION_EVENT_TYPE } from "./unified_stream.js";
 import { getPriceFromWS } from "./ws.js";
 
 type CommonNetOptions = {
@@ -185,6 +185,18 @@ addCommonNetOptions(
     .action(async (opts) => {
       const client = unifiedStreamClientFromOptions(opts);
       printJson(await client.liquidations(opts.limit));
+    }),
+);
+
+addCommonNetOptions(
+  stream
+    .command("cascades")
+    .description("Get unified stream liquidation_cascade events")
+    .option("--stream-url <url>", "Unified stream base URL", defaults.unifiedStreamUrl)
+    .option("--limit <n>", "Maximum events", (v) => Number(v), 200)
+    .action(async (opts) => {
+      const client = unifiedStreamClientFromOptions(opts);
+      printJson(await client.liquidationCascades(opts.limit));
     }),
 );
 
