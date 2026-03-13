@@ -1,23 +1,62 @@
 {
-  "name": "hypercore-ts-sdk",
-  "version": "0.2.2",
-  "description": "TypeScript SDK for Hyperliquid Heavy VM access, speed tests, and gRPC setup diagnostics.",
+  "name": "@aleatoric/hypercore-typescript-sdk",
+  "version": "0.3.0",
+  "description": "Aleatoric Systems Hypercore TypeScript SDK for Hyperliquid market data, unified streams, and gRPC access.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "bin": {
     "hypercore-ts-sdk": "dist/cli.js",
     "hypercore-ts-mcp": "dist/mcp_cli.js"
   },
+  "files": [
+    "dist/",
+    "proto/",
+    "README.md",
+    "API_INTERFACE.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "CONTRIBUTING.md"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
     "dev": "tsx src/cli.ts",
+    "prepack": "npm run build",
+    "release:check": "npm run build && npm test && npm pack --dry-run",
     "test": "npm run build && node --test tests/*.test.mjs",
     "validate:mcp:inspector": "bash ./scripts/validate_mcp_inspector.sh"
   },
   "engines": {
     "node": ">=20"
   },
+  "license": "Apache-2.0",
+  "author": "Aleatoric Systems <github@aleatoric.systems>",
+  "homepage": "https://aleatoric.systems",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aleatoric/hypercore-typescript-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aleatoric/hypercore-typescript-sdk/issues",
+    "email": "github@aleatoric.systems"
+  },
+  "keywords": [
+    "aleatoric",
+    "hypercore",
+    "hyperliquid",
+    "sdk",
+    "typescript",
+    "grpc",
+    "websocket",
+    "mcp"
+  ],
   "dependencies": {
     "@grpc/grpc-js": "^1.11.3",
     "@grpc/proto-loader": "^0.7.13",

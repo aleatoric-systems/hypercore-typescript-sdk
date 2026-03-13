@@ -1,12 +1,31 @@
 # Changelog
 
-## Unreleased
+All notable changes to this project are documented in this file.
 
-- added unified `liquidationCascades()` client helper and `unified_get_liquidation_cascades` MCP tool for derived liquidation clusters
-- added typed unified client support for browser-safe `allMids`, canonical `l2Book`, and `metaAndAssetCtxs`-backed asset-context endpoints
-- added unified stream SDK tests covering the new snapshot and SSE interfaces
-- added a TypeScript stdio MCP server built on top of the SDK clients
-- added typed service models for gRPC bridge, unified stream, liquidation feed, liquidation_cascade, block metrics, and status APIs
-- added a typed status client and richer unified stream typing
-- added SDK tests for MCP, status, and unified stream behavior including liquidation_cascade helpers
-- added MCP Inspector validation and documentation for Claude Desktop, Cursor, Windsurf, Codex, and VS Code
+## [0.3.0] - 2026-03-13
+
+### Added
+
+- Public package metadata for npm distribution, including exports, package contents, license, repository, and support fields.
+- Customer-facing documentation, contribution guide, and runnable connection examples.
+- A published TypeScript API interface reference.
+- GitHub Actions workflows for CI and tagged releases.
+- Release validation script using `npm pack --dry-run`.
+- Typed helpers for unified liquidations, liquidation cascades, status APIs, and browser-safe market data surfaces.
+- A stdio MCP server built directly on top of the SDK clients.
+- MCP parity for browser-safe unified all-mids, L2 book, and asset-context tools.
+
+### Changed
+
+- Reframed the repository as a public Aleatoric Systems SDK for external customers.
+- Standardized the README around installation, authentication, examples, release flow, and support.
+- Expanded MCP test coverage from smoke checks to a tool-matrix contract.
+- Improved package hygiene for publishable artifacts.
+
+## [0.2.2] - 2026-03-12
+
+### Added
+
+- MCP Inspector validation and documentation for major MCP client environments.
+- Typed service models for gRPC bridge, unified stream, liquidation feed, block metrics, and status APIs.
+- Tests covering MCP, status, and unified stream behavior.

@@ -1,126 +1,98 @@
-# Hypercore TypeScript SDK
+# Aleatoric Hypercore TypeScript SDK
 
-![MCP Inspector Validated](https://img.shields.io/badge/MCP%20Inspector-validated-2ea043)
+The Aleatoric Hypercore TypeScript SDK provides read-only access to Hyperliquid market data and infrastructure exposed through Aleatoric Systems. It is designed for customer-facing integrations that need a typed Node.js client, CLI tooling, and an MCP server for operator workflows.
 
-TypeScript mirror of the Python SDK for:
-- JSON-RPC access
-- WebSocket price access
-- dedicated unified stream access (stats, filtered events, liquidation feed, browser-safe allMids/L2/asset-context snapshots, SSE, consensus pulse)
-- typed status API access
-- gRPC health/price/stream/liquidations/block access
-- stdio MCP server built on top of the SDK clients
-- speed tests
-- gRPC gateway template output
+## Features
 
-This SDK is read-only/data-plane only. Signing and order placement are intentionally excluded.
+- JSON-RPC access for chain and relay methods
+- WebSocket pricing helpers
+- Unified stream access for stats, events, SSE, liquidations, cascades, all-mids, L2 book, and asset contexts
+- gRPC diagnostics and bridge consumers
+- Status API client
+- Stdio MCP server built on the same SDK primitives
+- CLI utilities for connection checks and latency benchmarking
 
-## Install
+This SDK is intentionally read-only. It does not include signing, custody, or order-placement flows.
+
+## Requirements
+
+- Node.js 20 or later
+- npm 10 or later
+
+## Installation
+
+Install from source:
 
 ```bash
-cd typescript-sdk
 npm install
 npm run build
-npm test
-npm run validate:mcp:inspector
 ```
 
-## Defaults
+Install as a package:
 
-- RPC URL: `https://rpc.aleatoric.systems/`
-- Unified stream URL: `https://unified.grpc.aleatoric.systems`
+```bash
+npm install @aleatoric/hypercore-typescript-sdk
+```
+
+## Default Endpoints
+
+- RPC: `https://rpc.aleatoric.systems/`
+- Unified stream: `https://unified.grpc.aleatoric.systems`
 - gRPC target: `hl.grpc.aleatoric.systems:443`
-- TLS-first by default
 
-## Key Requirements
+## Authentication
 
-- Unified API/SSE requires a `unified_stream` key with scope `stream:read`.
-- Disk-Sync WS uses the same unified-stream key class.
-- gRPC relay uses the gateway key class (`ALEATORIC_GRPC_KEY` preferred, `HYPER_GRPC_API_KEY` fallback).
-- The SDK also supports a generic `HYPER_API_KEY`, but surface-specific keys are preferred:
-  - `UNIFIED_STREAM_KEY`
-  - `ALEATORIC_GRPC_KEY`
+The SDK supports a general `HYPER_API_KEY`, but scoped keys are preferred:
 
-## Examples
+- `UNIFIED_STREAM_KEY` for unified stream and disk-sync interfaces
+- `ALEATORIC_GRPC_KEY` for gRPC bridge access
+- `HYPER_STATUS_TOKEN` for private status endpoints
 
-```bash
-node dist/cli.js rpc call --method eth_blockNumber --api-key "<API_KEY>"
-node dist/cli.js price ws --coin BTC --subscription allMids
-node dist/cli.js stream stats --stream-url https://unified.grpc.aleatoric.systems --api-key "<UNIFIED_STREAM_KEY>"
-node dist/cli.js stream events --limit 100 --event-type liquidation_warning --api-key "<UNIFIED_STREAM_KEY>"
-node dist/cli.js stream liquidations --limit 50 --api-key "<UNIFIED_STREAM_KEY>"
-node dist/cli.js stream cascades --limit 20 --api-key "<UNIFIED_STREAM_KEY>"
-node dist/cli.js stream sse --max-events 10 --event-type liquidation_warning --api-key "<UNIFIED_STREAM_KEY>"
-node dist/cli.js stream consensus-pulse --api-key "<UNIFIED_STREAM_KEY>"
-node dist/cli.js grpc health --target hl.grpc.aleatoric.systems:443
-node dist/cli.js grpc price --target hl.grpc.aleatoric.systems:443 --api-key "<ALEATORIC_GRPC_KEY>" --coin BTC
-node dist/cli.js grpc liquidations --target hl.grpc.aleatoric.systems:443 --api-key "<ALEATORIC_GRPC_KEY>" --coin BTC --max-messages 20
-node dist/cli.js speed grpc-health --target hl.grpc.aleatoric.systems:443 --count 20
-hypercore-ts-mcp
+## Quickstart
+
+### Library connection
+
+```ts
+import { HyperCoreAPI, UnifiedStreamClient, loadConfig } from "@aleatoric/hypercore-typescript-sdk";
+
+const config = loadConfig();
+
+const api = new HyperCoreAPI(config);
+const btcMid = await api.coinMid("BTC");
+console.log({ btcMid });
+
+const stream = new UnifiedStreamClient({
+  ...config,
+  apiKey: process.env.UNIFIED_STREAM_KEY,
+});
+
+const stats = await stream.stats();
+console.log(stats);
 ```
 
-## Unified Browser-Safe Market Data
-
-The unified client now exposes the browser-safe surfaces added to the hypernode:
-
-TypeScript API integration now exposes `client.liquidationCascades()` for derived `liquidation_cascade` events and keeps `client.liquidations()` for raw `liquidation_warning` events.
-
-- `allMids()` and `allMidsStream()`
-- `getL2Book()` and `streamL2Book()`
-- `getAssetContexts()` and `streamAssetContexts()`
-
-These endpoints are intended for browser or edge runtimes that cannot use `@grpc/grpc-js` directly but still need low-latency canonical market data.
-
-## TypeScript MCP
-
-The SDK now ships a stdio MCP server built on top of the SDK clients instead of a separate transport stack.
-
-Binary:
-
-- `hypercore-ts-mcp`
-
-Key env vars:
-
-- `HYPER_GRPC_TARGET`
-- `ALEATORIC_GRPC_KEY`
-- `HYPER_UNIFIED_STREAM_URL`
-- `UNIFIED_STREAM_KEY`
-- `HYPER_RPC_URL`
-- `HYPER_API_KEY`
-- `HYPER_STATUS_URL`
-- `HYPER_STATUS_TOKEN`
-
-### Startup
-
-Build the SDK first:
+### CLI connection checks
 
 ```bash
-cd /Users/jaws/research/dev/aleatoric/public/hypercore-typescript-sdk
-npm install
-npm run build
+npx hypercore-ts-sdk rpc call --method eth_blockNumber --api-key "$HYPER_API_KEY"
+npx hypercore-ts-sdk price ws --coin BTC --subscription allMids
+npx hypercore-ts-sdk stream stats --api-key "$UNIFIED_STREAM_KEY"
+npx hypercore-ts-sdk grpc health --target hl.grpc.aleatoric.systems:443
 ```
 
-Run the MCP server directly:
+### MCP server
 
 ```bash
-cd /Users/jaws/research/dev/aleatoric/public/hypercore-typescript-sdk
-HYPER_GRPC_TARGET="hl.grpc.aleatoric.systems:443" \
-ALEATORIC_GRPC_KEY="<GRPC_KEY>" \
-HYPER_UNIFIED_STREAM_URL="https://unified.grpc.aleatoric.systems" \
-UNIFIED_STREAM_KEY="<UNIFIED_KEY>" \
-HYPER_RPC_URL="https://rpc.aleatoric.systems/" \
-HYPER_API_KEY="<RPC_KEY>" \
-HYPER_STATUS_URL="http://127.0.0.1:8090" \
-HYPER_STATUS_TOKEN="<STATUS_TOKEN>" \
-node dist/mcp_cli.js
+export HYPER_GRPC_TARGET="hl.grpc.aleatoric.systems:443"
+export ALEATORIC_GRPC_KEY="<grpc-key>"
+export HYPER_UNIFIED_STREAM_URL="https://unified.grpc.aleatoric.systems"
+export UNIFIED_STREAM_KEY="<unified-key>"
+export HYPER_RPC_URL="https://rpc.aleatoric.systems/"
+export HYPER_API_KEY="<rpc-key>"
+
+npx hypercore-ts-mcp
 ```
 
-Or, if installed globally or linked locally:
-
-```bash
-hypercore-ts-mcp
-```
-
-The MCP server exposes these tools:
+The MCP server exposes:
 
 - `catalog_interfaces`
 - `grpc_get_mid_price`
@@ -131,209 +103,49 @@ The MCP server exposes these tools:
 - `unified_get_events`
 - `unified_get_liquidation_cascades`
 - `unified_get_consensus_pulse`
+- `unified_get_all_mids`
+- `unified_get_l2_book`
+- `unified_get_asset_contexts`
 - `status_get_public`
 - `status_get_private`
 - `rpc_call`
 
-Validation commands:
+## Examples
+
+- [examples/README.md](examples/README.md)
+- [examples/basic-connection.mjs](examples/basic-connection.mjs)
+- [examples/unified-stream-events.mjs](examples/unified-stream-events.mjs)
+
+Run an example:
 
 ```bash
+node examples/basic-connection.mjs
+```
+
+## Development
+
+```bash
+npm install
+npm run build
 npm test
 npm run validate:mcp:inspector
+npm run release:check
 ```
 
-### Claude Desktop
+## Release Process
 
-Claude Code documents stdio MCP servers with a `mcpServers` JSON object and `command`/`args` entries, and notes that Claude Desktop uses `claude_desktop_config.json`.
+- CI runs on pushes and pull requests.
+- Tags matching `v*` produce release artifacts and a GitHub Release.
+- `npm pack --dry-run` is used during release validation to confirm package contents.
 
-Add this server entry:
+## Support
 
-```json
-{
-  "mcpServers": {
-    "hypercore-ts-mcp": {
-      "type": "stdio",
-      "command": "node",
-      "args": [
-        "/Users/jaws/research/dev/aleatoric/public/hypercore-typescript-sdk/dist/mcp_cli.js"
-      ],
-      "env": {
-        "HYPER_GRPC_TARGET": "hl.grpc.aleatoric.systems:443",
-        "ALEATORIC_GRPC_KEY": "<GRPC_KEY>",
-        "HYPER_UNIFIED_STREAM_URL": "https://unified.grpc.aleatoric.systems",
-        "UNIFIED_STREAM_KEY": "<UNIFIED_KEY>",
-        "HYPER_RPC_URL": "https://rpc.aleatoric.systems/",
-        "HYPER_API_KEY": "<RPC_KEY>",
-        "HYPER_STATUS_URL": "http://127.0.0.1:8090",
-        "HYPER_STATUS_TOKEN": "<STATUS_TOKEN>"
-      }
-    }
-  }
-}
-```
+- Email: [github@aleatoric.systems](mailto:github@aleatoric.systems)
+- Discord: contact the Aleatoric Systems team for the active customer support server and onboarding channel
 
-How to use:
+## Documentation
 
-1. Build the SDK.
-2. Open Claude Desktop config and add the JSON above.
-3. Restart Claude Desktop.
-4. Ask Claude to use tools like `grpc_get_mid_price` or `unified_get_events`.
-
-### Cursor
-
-Cursor documents MCP servers through `mcp.json`, with project config in `.cursor/mcp.json` and global config in `~/.cursor/mcp.json`.
-
-Project-local config:
-
-```json
-{
-  "mcpServers": {
-    "hypercore-ts-mcp": {
-      "command": "node",
-      "args": [
-        "/Users/jaws/research/dev/aleatoric/public/hypercore-typescript-sdk/dist/mcp_cli.js"
-      ],
-      "env": {
-        "HYPER_GRPC_TARGET": "hl.grpc.aleatoric.systems:443",
-        "ALEATORIC_GRPC_KEY": "<GRPC_KEY>",
-        "HYPER_UNIFIED_STREAM_URL": "https://unified.grpc.aleatoric.systems",
-        "UNIFIED_STREAM_KEY": "<UNIFIED_KEY>",
-        "HYPER_RPC_URL": "https://rpc.aleatoric.systems/",
-        "HYPER_API_KEY": "<RPC_KEY>",
-        "HYPER_STATUS_URL": "http://127.0.0.1:8090",
-        "HYPER_STATUS_TOKEN": "<STATUS_TOKEN>"
-      }
-    }
-  }
-}
-```
-
-How to use:
-
-1. Save the file as `.cursor/mcp.json` in your workspace or `~/.cursor/mcp.json` globally.
-2. Reload Cursor.
-3. Confirm the MCP server appears in Cursor tools.
-4. Use Composer/Agent normally; Cursor can invoke the tools when relevant.
-
-### Windsurf
-
-Windsurf documents MCP config in `~/.codeium/mcp_config.json` and supports stdio servers via `command`, `args`, and `env`.
-
-Config:
-
-```json
-{
-  "mcpServers": {
-    "hypercore-ts-mcp": {
-      "command": "node",
-      "args": [
-        "/Users/jaws/research/dev/aleatoric/public/hypercore-typescript-sdk/dist/mcp_cli.js"
-      ],
-      "env": {
-        "HYPER_GRPC_TARGET": "hl.grpc.aleatoric.systems:443",
-        "ALEATORIC_GRPC_KEY": "<GRPC_KEY>",
-        "HYPER_UNIFIED_STREAM_URL": "https://unified.grpc.aleatoric.systems",
-        "UNIFIED_STREAM_KEY": "<UNIFIED_KEY>",
-        "HYPER_RPC_URL": "https://rpc.aleatoric.systems/",
-        "HYPER_API_KEY": "<RPC_KEY>",
-        "HYPER_STATUS_URL": "http://127.0.0.1:8090",
-        "HYPER_STATUS_TOKEN": "<STATUS_TOKEN>"
-      }
-    }
-  }
-}
-```
-
-How to use:
-
-1. Open Windsurf `Settings` > `Tools` > `Windsurf Settings` > `Add Server`, or edit `~/.codeium/mcp_config.json`.
-2. Add the config above.
-3. Refresh MCP plugins.
-4. Expose the server to Cascade and use the tools from chat.
-
-### Codex
-
-On this machine, the Codex CLI exposes MCP management through `codex mcp add`, `codex mcp list`, and related commands.
-
-Add the server:
-
-```bash
-codex mcp add hypercore-ts-mcp \
-  --env HYPER_GRPC_TARGET=hl.grpc.aleatoric.systems:443 \
-  --env ALEATORIC_GRPC_KEY=<GRPC_KEY> \
-  --env HYPER_UNIFIED_STREAM_URL=https://unified.grpc.aleatoric.systems \
-  --env UNIFIED_STREAM_KEY=<UNIFIED_KEY> \
-  --env HYPER_RPC_URL=https://rpc.aleatoric.systems/ \
-  --env HYPER_API_KEY=<RPC_KEY> \
-  --env HYPER_STATUS_URL=http://127.0.0.1:8090 \
-  --env HYPER_STATUS_TOKEN=<STATUS_TOKEN> \
-  -- node /Users/jaws/research/dev/aleatoric/public/hypercore-typescript-sdk/dist/mcp_cli.js
-```
-
-Verify:
-
-```bash
-codex mcp list
-```
-
-How to use:
-
-1. Build the SDK.
-2. Run the `codex mcp add` command above.
-3. Confirm it appears in `codex mcp list`.
-4. Restart Codex if needed so the new server is loaded.
-
-### VS Code
-
-VS Code documents MCP config in `mcp.json`, with workspace config in `.vscode/mcp.json`, user config in the MCP user profile, and CLI installation via `code --add-mcp`.
-
-Workspace config:
-
-```json
-{
-  "servers": {
-    "hypercore-ts-mcp": {
-      "type": "stdio",
-      "command": "node",
-      "args": [
-        "/Users/jaws/research/dev/aleatoric/public/hypercore-typescript-sdk/dist/mcp_cli.js"
-      ],
-      "env": {
-        "HYPER_GRPC_TARGET": "hl.grpc.aleatoric.systems:443",
-        "ALEATORIC_GRPC_KEY": "<GRPC_KEY>",
-        "HYPER_UNIFIED_STREAM_URL": "https://unified.grpc.aleatoric.systems",
-        "UNIFIED_STREAM_KEY": "<UNIFIED_KEY>",
-        "HYPER_RPC_URL": "https://rpc.aleatoric.systems/",
-        "HYPER_API_KEY": "<RPC_KEY>",
-        "HYPER_STATUS_URL": "http://127.0.0.1:8090",
-        "HYPER_STATUS_TOKEN": "<STATUS_TOKEN>"
-      }
-    }
-  }
-}
-```
-
-CLI alternative:
-
-```bash
-code --add-mcp "{\"name\":\"hypercore-ts-mcp\",\"command\":\"node\",\"args\":[\"/Users/jaws/research/dev/aleatoric/public/hypercore-typescript-sdk/dist/mcp_cli.js\"]}"
-```
-
-How to use:
-
-1. Save the JSON above as `.vscode/mcp.json`, or use `code --add-mcp`.
-2. Open VS Code chat/agent mode.
-3. Trust and start the server when prompted.
-4. Use MCP tools from chat or via MCP server management commands.
-
-Current production feed setup notes:
-
-- `hypercore-grpc-bridge` exposes liquidation topics and the bridge-side `StreamLiquidations` path.
-- The unified sidecar is configured with `UNIFIED_LIQUIDATION_TOPICS=0x8c7f585fb295f7eb1e6aeb8fba61b23a4fe60beda405f0045073b185c74412e3`.
-- Hyperliquid node runtime includes `--write-misc-events`, so unified `event_type=liquidation_warning` filters can be derived from node data.
-
-Lab-only plaintext fallback:
-
-```bash
-node dist/cli.js grpc health --target 10.0.0.4:50051 --plaintext
-```
+- [CHANGELOG.md](CHANGELOG.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [API_INTERFACE.md](API_INTERFACE.md)
+- [LICENSE](LICENSE)

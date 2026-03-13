@@ -163,6 +163,43 @@ export class HypernodeMCPServer {
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
       },
       {
+        name: "unified_get_all_mids",
+        description: "Fetch browser-safe allMids snapshot from the unified sidecar.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            dex: { type: "string" },
+          },
+          additionalProperties: false,
+        },
+      },
+      {
+        name: "unified_get_l2_book",
+        description: "Fetch browser-safe canonical L2 book snapshot from the unified sidecar.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            coin: { type: "string" },
+            dex: { type: "string" },
+            depth: { type: "integer", minimum: 1 },
+          },
+          required: ["coin"],
+          additionalProperties: false,
+        },
+      },
+      {
+        name: "unified_get_asset_contexts",
+        description: "Fetch browser-safe asset contexts including funding, OI, and 24h notional volume.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            coin: { type: "string" },
+            dex: { type: "string" },
+          },
+          additionalProperties: false,
+        },
+      },
+      {
         name: "status_get_public",
         description: "Fetch the public delayed status snapshot.",
         inputSchema: { type: "object", properties: {}, additionalProperties: false },
@@ -205,6 +242,9 @@ export class HypernodeMCPServer {
                 "/api/v1/unified/events",
                 "/api/v1/unified/stream",
                 "/api/v1/unified/consensus-pulse",
+                "/api/v1/unified/all-mids",
+                "/api/v1/unified/l2-book",
+                "/api/v1/unified/asset-contexts",
               ],
             },
             status_api: {
@@ -220,6 +260,8 @@ export class HypernodeMCPServer {
             "allMids",
             "trades",
             "l2Book top-of-book fields",
+            "full browser-safe l2Book snapshots",
+            "asset contexts from metaAndAssetCtxs",
             "derived l4_delta",
             "filtered liquidation_warning",
             "derived liquidation_cascade",
@@ -228,10 +270,11 @@ export class HypernodeMCPServer {
             "replica_cmd",
           ],
           recommended_paths: {
-            mid_price: "grpc_get_mid_price or grpc_stream_mids_sample(subscription=allMids)",
+            mid_price: "grpc_get_mid_price or unified_get_all_mids",
             trades: "grpc_stream_mids_sample(subscription=trades) or unified_get_events(stream=trades)",
-            l2_book: "grpc_stream_mids_sample(subscription=l2Book) for best bid/ask; upstream l2Book for full ladder",
+            l2_book: "unified_get_l2_book for browser-safe canonical snapshots; grpc_stream_mids_sample(subscription=l2Book) for top-of-book",
             l4_orderflow: "unified_get_stats and unified_get_events(stream=l4_delta)",
+            funding_oi_volume: "unified_get_asset_contexts",
             liquidations: "grpc_stream_liquidations_sample first, unified_get_events(eventType=liquidation_warning) second, unified_get_liquidation_cascades for derived clusters",
             block_metrics: "unified_get_stats or unified_get_events(eventType=block_metrics)",
           },
@@ -269,6 +312,18 @@ export class HypernodeMCPServer {
         return this.clients.unified.liquidationCascades(Number(argumentsPayload.limit ?? 50));
       case "unified_get_consensus_pulse":
         return this.clients.unified.consensusPulse();
+      case "unified_get_all_mids":
+        return this.clients.unified.allMids(typeof argumentsPayload.dex === "string" ? argumentsPayload.dex : undefined);
+      case "unified_get_l2_book":
+        return this.clients.unified.getL2Book(String(argumentsPayload.coin ?? "BTC"), {
+          dex: typeof argumentsPayload.dex === "string" ? argumentsPayload.dex : undefined,
+          depth: argumentsPayload.depth === undefined ? undefined : Number(argumentsPayload.depth),
+        });
+      case "unified_get_asset_contexts":
+        return this.clients.unified.getAssetContexts({
+          coin: typeof argumentsPayload.coin === "string" ? argumentsPayload.coin : undefined,
+          dex: typeof argumentsPayload.dex === "string" ? argumentsPayload.dex : undefined,
+        });
       case "status_get_public":
         return this.clients.status.publicStatus();
       case "status_get_private":
