@@ -1,6 +1,6 @@
 {
   "name": "@aleatoric/hypercore-typescript-sdk",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Aleatoric Systems Hypercore TypeScript SDK for Hyperliquid market data, unified streams, and gRPC access.",
   "type": "module",
   "main": "dist/index.js",
