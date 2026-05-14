@@ -1,0 +1,53 @@
+# Aleatoric Hypercore TypeScript SDK
+
+> Official Node.js and MCP integration surface for Aleatoric Systems. Provides typed clients for the Hypercore JSON-RPC gateway, Hyperliquid `/info`, unified REST/SSE stream, gRPC bridge, and status API, plus a stdio MCP server built on the same primitives. Aligned with Aleatoric Engine API v0.5.10 and MCP protocol 2024-11-05. Read-only: no signing, custody, or order placement.
+
+The SDK is published as `@aleatoric/hypercore-typescript-sdk` on npm and ships two CLI binaries: `hypercore-ts-sdk` (operator CLI) and `hypercore-ts-mcp` (stdio MCP server). Requires Node.js 20+.
+
+## Documentation
+
+- [README](README.md): Installation, quickstart, default endpoints, authentication, and CLI examples.
+- [API Interface](API_INTERFACE.md): Public interface contract — exported classes, methods, and MCP tools.
+- [Production guide](PRODUCTION.md): Production deployment, environment configuration, and support.
+- [Changelog](CHANGELOG.md): Version history and engine-compliance alignment notes.
+- [Contributing](CONTRIBUTING.md): Contribution workflow for the public SDK.
+- [License](LICENSE): Apache-2.0.
+
+## Examples
+
+- [examples/README.md](examples/README.md): Overview of runnable connection examples.
+- [examples/basic-connection.mjs](examples/basic-connection.mjs): Minimal HyperCoreAPI connection check.
+- [examples/unified-stream-events.mjs](examples/unified-stream-events.mjs): Reading unified stream events.
+
+## Source
+
+- [src/index.ts](src/index.ts): Public exports.
+- [src/config.ts](src/config.ts): `loadConfig()` and `SDKConfig` — environment-driven defaults and auth precedence.
+- [src/api.ts](src/api.ts): `HyperCoreAPI` — JSON-RPC, `eth_blockNumber`, Hyperliquid `allMids`, `coinMid`.
+- [src/unified_stream.ts](src/unified_stream.ts): `UnifiedStreamClient` — stats, events, liquidations, cascades, consensus pulse, browser-safe allMids/L2 book/asset contexts, SSE generators.
+- [src/grpc.ts](src/grpc.ts): `GrpcClient` — gRPC health, mid prices, mids stream, liquidations stream, block number, `grpcurl` helpers.
+- [src/status.ts](src/status.ts): `StatusClient` — public, private, and admin status snapshots.
+- [src/ws.ts](src/ws.ts): `getPriceFromWS` — WebSocket price helper.
+- [src/mcp.ts](src/mcp.ts): `HypernodeMCPServer` and `runMCPServer` — stdio MCP server.
+- [src/cli.ts](src/cli.ts): `hypercore-ts-sdk` CLI entry point.
+- [src/service_types.ts](src/service_types.ts): Typed envelopes for gRPC, unified, and status payloads.
+
+## MCP Tools
+
+The stdio MCP server (`hypercore-ts-mcp`) exposes: `catalog_interfaces`, `grpc_get_mid_price`, `grpc_stream_mids_sample`, `grpc_get_block_number`, `grpc_stream_liquidations_sample`, `unified_get_stats`, `unified_get_events`, `unified_get_liquidation_cascades`, `unified_get_consensus_pulse`, `unified_get_all_mids`, `unified_get_l2_book`, `unified_get_asset_contexts`, `status_get_public`, `status_get_private`, `rpc_call`.
+
+## Endpoints
+
+- RPC: `https://rpc.aleatoric.systems/`
+- Unified stream: `https://unified.grpc.aleatoric.systems`
+- gRPC bridge: `hl.grpc.aleatoric.systems:443`
+
+## Authentication
+
+Scoped API keys are preferred over the generic `HYPER_API_KEY`: `UNIFIED_STREAM_KEY` for unified stream and disk-sync, `ALEATORIC_GRPC_KEY` for gRPC bridge, `HYPER_STATUS_TOKEN` for private status endpoints.
+
+## Support
+
+- Email: github@aleatoric.systems
+- Issues: https://github.com/aleatoric-systems/hypercore-typescript-sdk/issues
+- Homepage: https://aleatoric.systems

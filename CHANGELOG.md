@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.2] - 2026-05-13
+
+### Added
+
+- `llms.txt` at the repo root for LLM-facing project discovery (per the llmstxt.org convention), included in the published npm package.
+
+### Changed
+
+- MCP server `serverInfo.version` aligned to SDK version (0.3.2).
+
+---
+
 ## [0.3.1] - 2026-03-17
 
 ### Changed

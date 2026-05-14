@@ -181,4 +181,5 @@ npm run release:check
 - [CONTRIBUTING.md](CONTRIBUTING.md)
 - [API_INTERFACE.md](API_INTERFACE.md)
 - [PRODUCTION.md](PRODUCTION.md)
+- [llms.txt](llms.txt)
 - [LICENSE](LICENSE)
